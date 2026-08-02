@@ -7,7 +7,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "check": "biome check --write .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "pnpm -r typecheck"
   },
   "keywords": [],
   "author": "",
