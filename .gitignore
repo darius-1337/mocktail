@@ -1,0 +1,34 @@
+# --- Dependencias ---
+node_modules/
+
+# --- Cobertura de pruebas (Vitest) ---
+coverage/
+*.lcov
+
+# --- Compilación y caché de TypeScript ---
+*.tsbuildinfo
+dist/
+build/
+out/
+
+# --- Cloudflare Workers ---
+.wrangler/
+.dev.vars
+
+# --- Sistema operativo ---
+.DS_Store
+Thumbs.db
+
+# --- Editores ---
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# --- Entorno (seguridad) ---
+.env
+.env.local
+.env.*.local
+
+# --- Logs ---
+*.log
