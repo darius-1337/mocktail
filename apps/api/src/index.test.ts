@@ -48,13 +48,7 @@ describe('GET /v1/gen/:kind', () => {
     expect(body.data).toHaveLength(25);
   });
 
-  // 404 test
-//  it('returns 404 for an unknown kind', async () => {
-//  const res = await get('/v1/gen/does-not-exist');
-//  console.log('STATUS', res.status, 'BODY', await res.clone().text());
-//  expect(res.status).toBe(404);
-//  expect((await json(res)).available).toBeInstanceOf(Array);
-//});
+  // 404 test hopefully does not break stuff
 it('returns 404 for an unknown kind', async () => {
   const res = await get('/v1/gen/does-not-exist');
   expect(res.status).toBe(404);
