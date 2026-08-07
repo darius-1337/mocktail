@@ -1,4 +1,3 @@
-import { hasToStringMethod } from 'fast-check';
 import type { GeneratedOptions } from '../../contracts.js';
 import { BAND_TARGET } from '../../contracts.js';
 import { selectByRarity, type Weighted } from '../../entropy/select.js';
@@ -51,7 +50,7 @@ function buildBban(rng: Rng, country: CountryCode, fill: DigitFill): string {
 /* internal control digits for the spanish CCC (doble modelo 11) */
 const CCC_WEIGHTS = [1, 2, 4, 8, 5, 10, 9, 7, 3, 6];
 
-function cccDigit(digits: string): String {
+function cccDigit(digits: string): string {
     let sum = 0;
     for(let i = 0; i < digits.length; i++) {
         sum += Number(digits[i]) * (CCC_WEIGHTS[CCC_WEIGHTS.length - digits.length + i] ?? 0);
