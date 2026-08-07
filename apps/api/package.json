@@ -1,0 +1,25 @@
+{
+	"name": "@mocktail/api",
+	"version": "1.0.0",
+	"description": "",
+	"private": true,
+	"scripts": {
+		"dev": "wrangler dev",
+		"build": "wrangler build",
+		"deploy": "wrangler publish",
+		"typecheck": "tsc --noEmit"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"type": "module",
+	"dependencies": {
+		"@mocktail/core": "workspace:*",
+		"hono": "^4.13.0"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "^5.20260804.1",
+		"typescript": "^7.0.2",
+		"wrangler": "^4.119.0"
+	}
+}
