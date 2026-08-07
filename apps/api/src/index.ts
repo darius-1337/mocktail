@@ -5,7 +5,6 @@ import {
 	kindIds,
 	randomSeed,
 	registry,
-	UnknownKindError,
 } from "@mocktail/core";
 import { type Context, Hono } from "hono";
 import { cors } from "hono/cors";
@@ -20,15 +19,20 @@ app.get("/", (c) =>
 		kinds: kindIds,
 		bands: BANDS,
 		examples: [
-			"/v1/gen/es.dni",
-			"/v1/gen/es.dni?band=hostil&count=5",
-			"/v1/gen/es.dni/my-seed-123?band=limit",
+			"/v1/gen/es-dni",
+			"/v1/gen/es-dni?band=hostile&count=5",
+			"/v1/gen/es-dni/my-seed-123?band=limit",
 		],
 	}),
 );
 
 function handle(c: Context, seed: string) {
 	const kind = c.req.param("kind") ?? "";
+
+	if(!registry.has(kind)) {
+		return c.json({ error: `unknown kind: ${kind}`, available: kindIds }, 404);
+	}
+
 	const bandParam = c.req.query("band") ?? "realistic";
 	const countParam = Number(c.req.query("count") ?? "1");
 
@@ -43,22 +47,15 @@ function handle(c: Context, seed: string) {
 		);
 	}
 
-	try {
 		return c.json(
 			generate({
-				kind,
+				kind: kind,
 				seed,
 				band: bandParam,
 				count: countParam,
 				valid: c.req.query("valid") !== "false",
 			}),
 		);
-	} catch (error) {
-		if (error instanceof UnknownKindError) {
-			return c.json({ error: error.message, available: kindIds }, 400);
-		}
-		throw error;
-	}
 }
 
 app.get("/v1/gen/:kind", (c) => handle(c, randomSeed()));
@@ -66,7 +63,7 @@ app.get("/v1/gen/:kind/:seed", (c) =>
 	handle(c, c.req.param("seed") ?? randomSeed()),
 );
 
-app.post("/v1/gen/:kind", async (c) => {
+app.post("/v1/validate/:kind", async (c) => {
 	const kind = registry.get(c.req.param("kind") ?? "");
 	if (kind === undefined) {
 		return c.json({ error: "Unknown kind", available: kindIds }, 404);
