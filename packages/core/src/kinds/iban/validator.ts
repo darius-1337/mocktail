@@ -1,7 +1,7 @@
 import type { ValidationResult } from "../../contracts";
 
 export const IBAN_LENGTHS = {
-    ES: 24, DE: 22, GB: 22, FR: 27, IT: 27, NL: 18, MT: 31, NO: 15,
+    ES: 24, DE: 22, GB: 22, FR: 27, IT: 27, NL: 18, MT: 31, NO: 15, BE: 16,
 } as const;
 
 export type CountryCode = keyof typeof IBAN_LENGTHS;
