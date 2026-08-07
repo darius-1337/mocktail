@@ -8,7 +8,8 @@ export function selectByRarity<T extends Weighted>(
 	rng: Rng,
 	candidates: readonly [T, ...T[]],
 	target: number,
-	spread = 0.25,
+	spread = 0.15,
+	// spread was to .25 lowered to .15 for band overlapping
 ): T {
 	const weights = candidates.map((candidate) =>
 		Math.exp(-((candidate.rarity - target) ** 2) / (2 * spread ** 2)),
