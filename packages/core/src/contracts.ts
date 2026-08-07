@@ -23,6 +23,7 @@ export interface ValidationResult {
 export interface Kind {
 	readonly id: string;
 	readonly label: string;
+	readonly description: string;
 	generate(rng: Rng, options: GeneratedOptions): string;
 	validate(value: string): ValidationResult;
 }

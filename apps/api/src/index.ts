@@ -5,6 +5,8 @@ import {
 	kindIds,
 	randomSeed,
 	registry,
+	seedFrom,
+	splitmix64
 } from "@mocktail/core";
 import { type Context, Hono } from "hono";
 import { cors } from "hono/cors";
@@ -24,6 +26,19 @@ app.get("/", (c) =>
 			"/v1/gen/es-dni/my-seed-123?band=limit",
 		],
 	}),
+);
+
+app.get('/v1/kinds', (c) =>
+  c.json({
+    count: registry.size,
+    kinds: [...registry.values()].map((kind) => ({
+      id: kind.id,
+      label: kind.label,
+      description: kind.description,
+      example: kind.generate(splitmix64(seedFrom('example')), { band: 'simple' }),
+      url: `/v1/gen/${kind.id}`,
+    })),
+  }),
 );
 
 function handle(c: Context, seed: string) {
