@@ -1,2 +1,8 @@
 mocktail
 Copyright 2026 Darius Tiganas
+
+Licensed under the Apache License, Version 2.0.
+
+This product includes IBAN structural data derived from the SWIFT
+IBAN Registry, used under the terms permitting non-profit reuse
+with acknowledgement of the source.
