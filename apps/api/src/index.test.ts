@@ -127,3 +127,16 @@ describe('POST /v1/validate/:kind', () => {
     },
   );
 });
+
+it('rejects an over-long seed', async () => {
+  const res = await get(`/v1/gen/es-dni/${'x'.repeat(300)}`);
+  expect(res.status).toBe(400);
+});
+
+it('marks seeded responses as immutable', async () => {
+  const seeded = await get('/v1/gen/es-dni/abc');
+  expect(seeded.headers.get('Cache-Control')).toContain('immutable');
+
+  const random = await get('/v1/gen/es-dni');
+  expect(random.headers.get('Cache-Control')).toBe('no-store');
+});
