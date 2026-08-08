@@ -3,6 +3,8 @@ import { registry } from "./registry.js";
 import { seedFrom } from "./rng/seed.js";
 import { splitmix64 } from "./rng/splitmix64.js";
 
+export const MAX_SEED_LENGTH = 256;
+
 export interface GenerateRequest {
 	readonly kind: string;
 	readonly seed: string;
@@ -27,7 +29,19 @@ export class UnknownKindError extends Error {
 	}
 }
 
+export class InvalidSeedError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = 'InvalidSeedError';
+	}
+}
+
 export function generate(req: GenerateRequest): GenerateResult {
+
+	if(req.seed.length > MAX_SEED_LENGTH) {
+		throw new InvalidSeedError(`the seed cannot exceed ${MAX_SEED_LENGTH} characters`);
+	}
+
 	const kind = registry.get(req.kind);
 	if (kind === undefined) throw new UnknownKindError(req.kind);
 
