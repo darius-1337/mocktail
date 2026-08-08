@@ -3,6 +3,7 @@ import {
 	generate,
 	isBand,
 	kindIds,
+	MAX_SEED_LENGTH,
 	randomSeed,
 	registry,
 	seedFrom,
@@ -41,7 +42,7 @@ app.get('/v1/kinds', (c) =>
   }),
 );
 
-function handle(c: Context, seed: string) {
+function handle(c: Context, seed: string, seeded: boolean) {
 	const kind = c.req.param("kind") ?? "";
 
 	if(!registry.has(kind)) {
@@ -62,7 +63,11 @@ function handle(c: Context, seed: string) {
 		);
 	}
 
-		return c.json(
+	if(seed.length > MAX_SEED_LENGTH) {
+		return c.json({error: `seed cannot exceed ${MAX_SEED_LENGTH} characters.`}, 400);
+	}
+
+		const res = c.json(
 			generate({
 				kind: kind,
 				seed,
@@ -71,11 +76,18 @@ function handle(c: Context, seed: string) {
 				valid: c.req.query("valid") !== "false",
 			}),
 		);
+
+		res.headers.set(
+			"Cache-Control",
+			seeded ? "public, max-age=31526000, immutable" : "no-store",
+		);
+
+		return res;
 }
 
-app.get("/v1/gen/:kind", (c) => handle(c, randomSeed()));
+app.get("/v1/gen/:kind", (c) => handle(c, randomSeed(), false));
 app.get("/v1/gen/:kind/:seed", (c) =>
-	handle(c, c.req.param("seed") ?? randomSeed()),
+	handle(c, c.req.param('seed') ?? '', true),
 );
 
 app.post("/v1/validate/:kind", async (c) => {
