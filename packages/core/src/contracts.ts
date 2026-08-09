@@ -13,6 +13,7 @@ export const BAND_TARGET: Record<Band, number> = {
 export interface GeneratedOptions {
 	readonly band: Band;
 	readonly valid?: boolean;
+	readonly params?: Readonly<Record<string, string>>;
 }
 
 export interface ValidationResult {
@@ -20,10 +21,19 @@ export interface ValidationResult {
 	readonly reason?: string;
 }
 
+export interface KindParam {
+	readonly name: string;
+  readonly description: string;
+  readonly default?: string;
+  readonly maxLength?: number;
+  readonly pattern?: RegExp;
+}
+
 export interface Kind {
 	readonly id: string;
 	readonly label: string;
 	readonly description: string;
+	readonly params?: readonly KindParam[];
 	generate(rng: Rng, options: GeneratedOptions): string;
 	validate(value: string): ValidationResult;
 }
