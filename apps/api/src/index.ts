@@ -1,6 +1,8 @@
 import {
 	BANDS,
+	detectConfusable,
 	generate,
+	InvalidParamError,
 	isBand,
 	kindIds,
 	MAX_SEED_LENGTH,
@@ -14,6 +16,8 @@ import { cors } from "hono/cors";
 
 const app = new Hono();
 app.use("/*", cors());
+
+const RESERVED = new Set(["band", "count", "valid"]);
 
 app.get("/", (c) =>
 	c.json({
@@ -67,6 +71,11 @@ function handle(c: Context, seed: string, seeded: boolean) {
 		return c.json({error: `seed cannot exceed ${MAX_SEED_LENGTH} characters.`}, 400);
 	}
 
+	const params = Object.fromEntries(
+		[...new URL(c.req.url).searchParams].filter(([key]) => !RESERVED.has(key)),
+	);
+
+	try {
 		const res = c.json(
 			generate({
 				kind: kind,
@@ -74,6 +83,7 @@ function handle(c: Context, seed: string, seeded: boolean) {
 				band: bandParam,
 				count: countParam,
 				valid: c.req.query("valid") !== "false",
+				params,
 			}),
 		);
 
@@ -83,6 +93,14 @@ function handle(c: Context, seed: string, seeded: boolean) {
 		);
 
 		return res;
+
+	} catch (error) {
+		if(error instanceof InvalidParamError) {
+			return c.json({ error: error.message }, 400);
+		}
+
+		throw error;
+	}
 }
 
 app.get("/v1/gen/:kind", (c) => handle(c, randomSeed(), false));
@@ -105,6 +123,19 @@ app.post("/v1/validate/:kind", async (c) => {
 		value: body.value,
 		...kind.validate(body.value),
 	});
+});
+
+app.post("/v1/analyze/domain", async (c) => {
+	const body = await c.req.json<{ value?: string }>();
+	if (typeof body.value !== "string") {
+		return c.json({ error: 'Body must be { "value": "..." }' }, 400);
+	}
+	return c.json({ value: body.value, ...detectConfusable(body.value) });
+});
+
+app.onError((err, c) => {
+	console.error(err);
+	return c.json({ error: "Internal error" }, 500);
 });
 
 export default app;
