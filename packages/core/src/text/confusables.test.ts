@@ -60,4 +60,24 @@ describe('detectConfusable', () => {
     expect(withinLabel.severity).toBe('high');
     expect(acrossLabels.severity).toBe('medium');
   });
+
+  it('detects Greek homoglyphs, not just Cyrillic', () => {
+    const r = detectConfusable('pc\u03BFmponentes.com');
+    expect(r.severity).toBe('high');
+    expect(r.scripts).toContain('Greek');
+  });
+
+  it('detects an attack combining three scripts', () => {
+    const r = detectConfusable('\u0440\u0441c\u03BFmponent\u0435s.com');
+    expect(r.severity).toBe('high');
+    expect(r.scripts).toHaveLength(3);
+  });
+
+  it.each(['pccomponentes.es', 'pccomponentes.com'])(
+    'clears the legitimate domain %s',
+    (d) => {
+      expect(detectConfusable(d).suspicious).toBe(false);
+    },
+  );
+
 });
