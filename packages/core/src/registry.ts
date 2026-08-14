@@ -4,8 +4,9 @@ import { domainHomograph } from "./kinds/domain-homograph/index.js";
 import { email } from "./kinds/email/index.js";
 import { esDni } from "./kinds/es-dni/index.js";
 import { ibanKinds } from "./kinds/iban/index.js";
+import { uuidKinds } from "./kinds/uuid/index.js";
 
-const kinds: readonly Kind[] = [esDni, ...ibanKinds, ...cardKinds, email, domainHomograph];
+const kinds: readonly Kind[] = [esDni, ...ibanKinds, ...cardKinds, ...uuidKinds, email, domainHomograph];
 
 export const registry: ReadonlyMap<string, Kind> = new Map(
 	kinds.map((kind) => [kind.id, kind]),
