@@ -13,6 +13,7 @@ import {
 } from "@mocktail/core";
 import { type Context, Hono } from "hono";
 import { cors } from "hono/cors";
+import { populate, PopulateError, toCsv, toNdjson, toSql } from '@mocktail/populate';
 
 const app = new Hono();
 app.use("/*", cors());
@@ -136,6 +137,67 @@ app.post("/v1/analyze/domain", async (c) => {
 app.onError((err, c) => {
 	console.error(err);
 	return c.json({ error: "Internal error" }, 500);
+});
+
+app.post('/v1/populate', async (c) => {
+	let body: unknown;
+	try {
+		body = await c.req.json();
+	} catch {
+		return c.json({ error: 'Body must be valid JSON' }, 400);
+	}
+
+	const req = body as {
+		seed?: string;
+		count?: number;
+		band?: string;
+		table?: string;
+		fields?: Record<string, unknown>;
+	};
+
+	if (typeof req.fields !== 'object' || req.fields === null) {
+		return c.json({ error: 'Body must include a "fields" object' }, 400);
+	}
+	if (req.band !== undefined && !isBand(req.band)) {
+		return c.json({ error: 'Invalid band', allowed: BANDS }, 400);
+	}
+
+	const seed = req.seed ?? randomSeed();
+	if (seed.length > MAX_SEED_LENGTH) {
+		return c.json({ error: `seed cannot exceed ${MAX_SEED_LENGTH} characters` }, 400);
+	}
+
+	try {
+		const rows = populate({
+			seed,
+			count: req.count ?? 10,
+			...(req.band !== undefined && isBand(req.band) ? { band: req.band } : {}),
+			fields: req.fields as never,
+		});
+
+		const accept = c.req.header('Accept') ?? 'application/json';
+
+		if (accept.includes('application/sql')) {
+			return c.text(toSql(req.table ?? 'generated_data', rows), 200, {
+				'Content-Type': 'application/sql; charset=utf-8',
+			});
+		}
+		if (accept.includes('text/csv')) {
+			return c.text(toCsv(rows), 200, { 'Content-Type': 'text/csv; charset=utf-8' });
+		}
+		if (accept.includes('application/x-ndjson')) {
+			return c.text(toNdjson(rows), 200, {
+				'Content-Type': 'application/x-ndjson; charset=utf-8',
+			});
+		}
+
+		return c.json({ seed, count: rows.length, data: rows });
+	} catch (error) {
+		if (error instanceof PopulateError) {
+			return c.json({ error: error.message, available: kindIds }, 400);
+		}
+		throw error;
+	}
 });
 
 export default app;
