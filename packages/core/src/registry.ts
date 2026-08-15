@@ -7,8 +7,9 @@ import { ibanKinds } from "./kinds/iban/index.js";
 import { uuidKinds } from "./kinds/uuid/index.js";
 import { date } from "./kinds/date/index.js";
 import { datetime } from "./kinds/datetime/index.js";
+import { datetimeSql } from "./kinds/datetime-sql/index.js";
 
-const kinds: readonly Kind[] = [esDni, ...ibanKinds, ...cardKinds, ...uuidKinds, email, domainHomograph, date, datetime];
+const kinds: readonly Kind[] = [esDni, ...ibanKinds, ...cardKinds, ...uuidKinds, email, domainHomograph, date, datetime, datetimeSql];
 
 export const registry: ReadonlyMap<string, Kind> = new Map(
 	kinds.map((kind) => [kind.id, kind]),
