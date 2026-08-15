@@ -222,6 +222,9 @@ importers:
       '@mocktail/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@mocktail/populate':
+        specifier: workspace:*
+        version: link:../../packages/populate
       hono:
         specifier: ^4.13.0
         version: 4.13.0
@@ -244,6 +247,12 @@ importers:
       fast-check:
         specifier: ^4.9.0
         version: 4.9.0
+
+  packages/populate:
+    dependencies:
+      '@mocktail/core':
+        specifier: workspace:*
+        version: link:../core
 
 packages:
 
