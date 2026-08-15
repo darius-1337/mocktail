@@ -15,6 +15,7 @@
 	"type": "module",
 	"dependencies": {
 		"@mocktail/core": "workspace:*",
+		"@mocktail/populate": "workspace:*",
 		"hono": "^4.13.0"
 	},
 	"devDependencies": {
