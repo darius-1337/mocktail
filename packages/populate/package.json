@@ -1,0 +1,14 @@
+{
+	"name": "@mocktail/populate",
+	"version": "0.1.0",
+	"description": "Schema-driven bulk data generation for mocktail",
+	"type": "module",
+	"license": "Apache-2.0",
+	"exports": { ".": "./src/index.ts" },
+	"scripts": {
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@mocktail/core": "workspace:*"
+	}
+}
