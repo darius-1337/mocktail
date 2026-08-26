@@ -14,6 +14,7 @@ import { type Context, Hono } from "hono";
 import { cors } from "hono/cors";
 import { populate, toCsv, toNdjson, toSql } from '@mocktail/populate';
 import { toErrorResponse } from "./errors.js";
+import { CACHE_POLICY } from "./cache.js";
 
 const app = new Hono();
 app.use("/*", cors());
@@ -106,7 +107,7 @@ function handle(c: Context, seed: string, seeded: boolean) {
 
 		res.headers.set(
 			"Cache-Control",
-			seeded ? "public, max-age=31526000, immutable" : "no-store",
+			CACHE_POLICY[seeded ? "seeded" : "random"],
 		);
 
 		return res;	

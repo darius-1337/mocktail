@@ -133,14 +133,6 @@ it('rejects an over-long seed', async () => {
   expect(res.status).toBe(400);
 });
 
-it('marks seeded responses as immutable', async () => {
-  const seeded = await get('/v1/gen/es-dni/abc');
-  expect(seeded.headers.get('Cache-Control')).toContain('immutable');
-
-  const random = await get('/v1/gen/es-dni');
-  expect(random.headers.get('Cache-Control')).toBe('no-store');
-});
-
 it.each(['/v1/validate/es-dni', '/v1/analyze/domain', '/v1/populate'])(
   'returns 400 for malformed JSON at %s',
   async (path) => {
@@ -152,3 +144,13 @@ it.each(['/v1/validate/es-dni', '/v1/analyze/domain', '/v1/populate'])(
     expect(res.status).toBe(400);
   },
 );
+
+it('seeded responses are cacheable but not immutable', async () => {
+  const header = (await get('/v1/gen/es-dni/abc')).headers.get('Cache-Control') ?? '';
+  expect(header).toContain('max-age=');
+  expect(header).not.toContain('immutable');
+});
+
+it('random-seed responses are never cached', async () => {
+  expect((await get('/v1/gen/es-dni')).headers.get('Cache-Control')).toBe('no-store');
+});
