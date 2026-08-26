@@ -140,3 +140,15 @@ it('marks seeded responses as immutable', async () => {
   const random = await get('/v1/gen/es-dni');
   expect(random.headers.get('Cache-Control')).toBe('no-store');
 });
+
+it.each(['/v1/validate/es-dni', '/v1/analyze/domain', '/v1/populate'])(
+  'returns 400 for malformed JSON at %s',
+  async (path) => {
+    const res = await app.request(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{roto',
+    });
+    expect(res.status).toBe(400);
+  },
+);

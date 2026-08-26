@@ -14,11 +14,28 @@ import {
 import { type Context, Hono } from "hono";
 import { cors } from "hono/cors";
 import { populate, PopulateError, toCsv, toNdjson, toSql } from '@mocktail/populate';
+import { toErrorResponse } from "./errors.js";
 
 const app = new Hono();
 app.use("/*", cors());
 
 const RESERVED = new Set(["band", "count", "valid"]);
+
+app.onError((err, c) => {
+  const mapped = toErrorResponse(c, err);
+  if (mapped !== null) return mapped;
+
+  console.error(err);
+  return c.json({ error: 'Internal error' }, 500);
+});
+
+async function readJson(c: Context): Promise<Record<string, unknown> | null> {
+	try {
+		return await c.req.json();
+	} catch {
+		return null;
+	}
+}
 
 app.get("/", (c) =>
 	c.json({
@@ -76,7 +93,7 @@ function handle(c: Context, seed: string, seeded: boolean) {
 		[...new URL(c.req.url).searchParams].filter(([key]) => !RESERVED.has(key)),
 	);
 
-	try {
+	
 		const res = c.json(
 			generate({
 				kind: kind,
@@ -93,15 +110,7 @@ function handle(c: Context, seed: string, seeded: boolean) {
 			seeded ? "public, max-age=31526000, immutable" : "no-store",
 		);
 
-		return res;
-
-	} catch (error) {
-		if(error instanceof InvalidParamError) {
-			return c.json({ error: error.message }, 400);
-		}
-
-		throw error;
-	}
+		return res;	
 }
 
 app.get("/v1/gen/:kind", (c) => handle(c, randomSeed(), false));
@@ -115,10 +124,13 @@ app.post("/v1/validate/:kind", async (c) => {
 		return c.json({ error: "Unknown kind", available: kindIds }, 404);
 	}
 
-	const body = await c.req.json<{ value?: string }>();
+	const body = await readJson(c);
+	if (body === null) return c.json({ error: "Body must be valid JSON" }, 400);
+
 	if (typeof body.value !== "string") {
 		return c.json({ error: 'Body must be { "value": "..." }' }, 400);
 	}
+
 	return c.json({
 		kind: kind.id,
 		value: body.value,
@@ -127,25 +139,19 @@ app.post("/v1/validate/:kind", async (c) => {
 });
 
 app.post("/v1/analyze/domain", async (c) => {
-	const body = await c.req.json<{ value?: string }>();
+	const body = await readJson(c);
+	if (body === null) return c.json({ error: "Body must be valid JSON" }, 400);
+
 	if (typeof body.value !== "string") {
 		return c.json({ error: 'Body must be { "value": "..." }' }, 400);
 	}
+
 	return c.json({ value: body.value, ...detectConfusable(body.value) });
 });
 
-app.onError((err, c) => {
-	console.error(err);
-	return c.json({ error: "Internal error" }, 500);
-});
-
-app.post('/v1/populate', async (c) => {
-	let body: unknown;
-	try {
-		body = await c.req.json();
-	} catch {
-		return c.json({ error: 'Body must be valid JSON' }, 400);
-	}
+app.post("/v1/populate", async (c) => {
+	const body = await readJson(c);
+	if (body === null) return c.json({ error: "Body must be valid JSON" }, 400);
 
 	const req = body as {
 		seed?: string;
@@ -155,11 +161,11 @@ app.post('/v1/populate', async (c) => {
 		fields?: Record<string, unknown>;
 	};
 
-	if (typeof req.fields !== 'object' || req.fields === null) {
+	if (typeof req.fields !== "object" || req.fields === null) {
 		return c.json({ error: 'Body must include a "fields" object' }, 400);
 	}
 	if (req.band !== undefined && !isBand(req.band)) {
-		return c.json({ error: 'Invalid band', allowed: BANDS }, 400);
+		return c.json({ error: "Invalid band", allowed: BANDS }, 400);
 	}
 
 	const seed = req.seed ?? randomSeed();
@@ -167,37 +173,30 @@ app.post('/v1/populate', async (c) => {
 		return c.json({ error: `seed cannot exceed ${MAX_SEED_LENGTH} characters` }, 400);
 	}
 
-	try {
-		const rows = populate({
-			seed,
-			count: req.count ?? 10,
-			...(req.band !== undefined && isBand(req.band) ? { band: req.band } : {}),
-			fields: req.fields as never,
+	const rows = populate({
+		seed,
+		count: req.count ?? 10,
+		...(req.band !== undefined && isBand(req.band) ? { band: req.band } : {}),
+		fields: req.fields as never,
+	});
+
+	const accept = c.req.header("Accept") ?? "application/json";
+
+	if (accept.includes("application/sql")) {
+		return c.text(toSql(req.table ?? "generated_data", rows), 200, {
+			"Content-Type": "application/sql; charset=utf-8",
 		});
-
-		const accept = c.req.header('Accept') ?? 'application/json';
-
-		if (accept.includes('application/sql')) {
-			return c.text(toSql(req.table ?? 'generated_data', rows), 200, {
-				'Content-Type': 'application/sql; charset=utf-8',
-			});
-		}
-		if (accept.includes('text/csv')) {
-			return c.text(toCsv(rows), 200, { 'Content-Type': 'text/csv; charset=utf-8' });
-		}
-		if (accept.includes('application/x-ndjson')) {
-			return c.text(toNdjson(rows), 200, {
-				'Content-Type': 'application/x-ndjson; charset=utf-8',
-			});
-		}
-
-		return c.json({ seed, count: rows.length, data: rows });
-	} catch (error) {
-		if (error instanceof PopulateError) {
-			return c.json({ error: error.message, available: kindIds }, 400);
-		}
-		throw error;
 	}
+	if (accept.includes("text/csv")) {
+		return c.text(toCsv(rows), 200, { "Content-Type": "text/csv; charset=utf-8" });
+	}
+	if (accept.includes("application/x-ndjson")) {
+		return c.text(toNdjson(rows), 200, {
+			"Content-Type": "application/x-ndjson; charset=utf-8",
+		});
+	}
+
+	return c.json({ seed, count: rows.length, data: rows });
 });
 
 export default app;
