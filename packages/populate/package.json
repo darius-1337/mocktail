@@ -4,11 +4,16 @@
 	"description": "Schema-driven bulk data generation for mocktail",
 	"type": "module",
 	"license": "Apache-2.0",
-	"exports": { ".": "./src/index.ts" },
+	"exports": {
+		".": "./src/index.ts"
+	},
 	"scripts": {
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
 		"@mocktail/core": "workspace:*"
+	},
+	"devDependencies": {
+		"vitest": "^4.1.10"
 	}
 }
