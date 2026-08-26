@@ -1,6 +1,6 @@
 import type { Context } from 'hono';
 import { InvalidParamError, InvalidSeedError, UnknownKindError, kindIds } from '@mocktail/core';
-import { PopulateError } from '@mocktail/populate';
+import { PopulateError, UnsafeIdentifierError } from '@mocktail/populate';
 
 interface Mapping {
     readonly status: 400 | 404;
@@ -29,6 +29,10 @@ const MAPPINGS: readonly (readonly [new (...args: never[]) => Error, Mapping])[]
   [
     PopulateError,
     { status: 400, body: (e) => ({ error: e.message, available: kindIds }) },
+  ],
+  [
+    UnsafeIdentifierError,
+    { status: 400, body: (e) => ({ error: e.message }) },
   ],
 ];
 

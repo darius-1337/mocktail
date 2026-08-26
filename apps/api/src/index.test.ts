@@ -154,3 +154,17 @@ it('seeded responses are cacheable but not immutable', async () => {
 it('random-seed responses are never cached', async () => {
   expect((await get('/v1/gen/es-dni')).headers.get('Cache-Control')).toBe('no-store');
 });
+
+it('rejects an unsafe table name in the SQL output', async () => {
+  const res = await app.request('/v1/populate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/sql' },
+    body: JSON.stringify({
+      seed: 's',
+      count: 1,
+      table: 'users; DROP TABLE users; --',
+      fields: { email: 'email' },
+    }),
+  });
+  expect(res.status).toBe(400);
+});

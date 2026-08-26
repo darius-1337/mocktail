@@ -19,6 +19,12 @@ import { CACHE_POLICY } from "./cache.js";
 const app = new Hono();
 app.use("/*", cors());
 
+app.use('/*', async (c, next) => {
+  await next();
+  c.header('X-Content-Type-Options', 'nosniff');
+  c.header('Referrer-Policy', 'no-referrer');
+});
+
 const RESERVED = new Set(["band", "count", "valid"]);
 
 app.onError((err, c) => {
