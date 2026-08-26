@@ -1,3 +1,4 @@
+import { string } from "fast-check";
 import { BANDS, type Band, type Kind } from "./contracts.js";
 import { registry } from "./registry.js";
 import { seedFrom } from "./rng/seed.js";
@@ -26,6 +27,14 @@ export interface GenerateResult {
 	readonly data: readonly string[];
 }
 
+export interface ParamProblem {
+	readonly parameter: string;
+	readonly reason: 'missing' | 'too_long' | 'invalid_format';
+	readonly received?: string;
+	readonly expected?: string;
+	readonly example?: string;
+}
+
 export class UnknownKindError extends Error {
 	constructor(readonly kind: string) {
 		super(`Unknown kind: ${kind}`);
@@ -40,8 +49,8 @@ export class InvalidSeedError extends Error {
 }
 
 export class InvalidParamError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(readonly problem: ParamProblem) {
+    super(`invalid parameter "${problem.parameter}": ${problem.reason}`);
     this.name = 'InvalidParamError';
   }
 }
@@ -95,16 +104,33 @@ function resolveParams(
     const value = given[spec.name] ?? spec.default;
 
     if (value === undefined) {
-      throw new InvalidParamError(`missing required parameter: ${spec.name}`);
+      throw new InvalidParamError({
+        parameter: spec.name,
+        reason: 'missing',
+        expected: spec.description,
+      });
     }
-    if (value.length > (spec.maxLength ?? MAX_PARAM_LENGTH)) {
-      throw new InvalidParamError(
-        `${spec.name} exceeds ${spec.maxLength ?? MAX_PARAM_LENGTH} characters`,
-      );
+
+    const maxLength = spec.maxLength ?? MAX_PARAM_LENGTH;
+    if (value.length > maxLength) {
+      throw new InvalidParamError({
+        parameter: spec.name,
+        reason: 'too_long',
+        received: `${value.length} characters`,
+        expected: `at most ${maxLength}`,
+      });
     }
+
     if (spec.pattern !== undefined && !spec.pattern.test(value)) {
-      throw new InvalidParamError(`${spec.name} has an invalid format`);
+      throw new InvalidParamError({
+        parameter: spec.name,
+        reason: 'invalid_format',
+        received: value,
+        expected: spec.pattern.source,
+        ...(spec.default !== undefined ? { example: spec.default } : {}),
+      });
     }
+
     resolved[spec.name] = value;
   }
 
