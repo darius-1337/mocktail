@@ -2,6 +2,8 @@ import { type Band, registry, seedFrom, splitmix64 } from '@mocktail/core';
 import { generatePrimitive, type PrimitiveSpec } from './primitives.js';
 import type { Row } from './format.js';
 
+
+
 export type FieldSpec =
   | string
   | { readonly kind: string; readonly band?: Band; readonly params?: Record<string, string> }
@@ -21,14 +23,28 @@ const isPrimitive = (spec: FieldSpec): spec is PrimitiveSpec =>
 
 export class PopulateError extends Error {}
 
+export const MAX_ROWS = 10_000;
+export const MAX_FIELDS = 50;
+export const MAX_CELLS = 100_000;
+
 export function populate(req: PopulateRequest): readonly Row[] {
-  const count = Math.min(Math.max(req.count, 1), 10_000);
   const defaultBand = req.band ?? 'realistic';
   const entries = Object.entries(req.fields);
 
   if (entries.length === 0) throw new PopulateError('fields cannot be empty');
+  if (entries.length > MAX_FIELDS) {
+    throw new PopulateError(`at most ${MAX_FIELDS} fields, got ${entries.length}`);
+  }
 
-  for (const [name, spec] of entries) {
+  const count = Math.min(Math.max(req.count, 1), MAX_ROWS);
+
+  if (count * entries.length > MAX_CELLS) {
+    throw new PopulateError(
+      `count x fields must not exceed ${MAX_CELLS}, got ${count * entries.length}`,
+    );
+  }
+
+    for (const [name, spec] of entries) {
     if (isPrimitive(spec)) continue;
     const id = typeof spec === 'string' ? spec : spec.kind;
     if (!registry.has(id)) {

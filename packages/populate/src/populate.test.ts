@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { populate } from './populate.js';
+import { populate, PopulateError } from './populate.js';
 import { toCsv, toSql } from './format.js';
 
 describe('populate', () => {
@@ -39,4 +39,18 @@ describe('populate', () => {
     expect(toSql('users', rows)).toContain('INSERT INTO users');
     expect(toCsv(rows).split('\n')[0]).toBe('id,dni,email,age,active');
   });
+});
+
+it('rejects too many fields', () => {
+  const fields = Object.fromEntries(
+    Array.from({ length: 51 }, (_, i) => [`f${i}`, 'es-dni']),
+  );
+  expect(() => populate({ seed: 's', count: 1, fields })).toThrow(PopulateError);
+});
+
+it('rejects count × fields above the cell limit', () => {
+  const fields = Object.fromEntries(
+    Array.from({ length: 20 }, (_, i) => [`f${i}`, 'es-dni']),
+  );
+  expect(() => populate({ seed: 's', count: 10_000, fields })).toThrow(PopulateError);
 });
