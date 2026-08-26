@@ -2,7 +2,6 @@ import {
 	BANDS,
 	detectConfusable,
 	generate,
-	InvalidParamError,
 	isBand,
 	kindIds,
 	MAX_SEED_LENGTH,
@@ -13,7 +12,7 @@ import {
 } from "@mocktail/core";
 import { type Context, Hono } from "hono";
 import { cors } from "hono/cors";
-import { populate, PopulateError, toCsv, toNdjson, toSql } from '@mocktail/populate';
+import { populate, toCsv, toNdjson, toSql } from '@mocktail/populate';
 import { toErrorResponse } from "./errors.js";
 
 const app = new Hono();
