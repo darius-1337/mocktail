@@ -47,13 +47,6 @@ describe('detectConfusable', () => {
     expect([...scriptsIn(`${CYR.a}pple`)].sort()).toEqual(['Cyrillic', 'Latin']);
   });
 
-  it('warns that punycode must be decoded first', () => {
-    const r = detectConfusable('xn--e1awd7f.com');
-    expect(r.punycode).toBe(true);
-    expect(r.severity).toBe('low');
-    expect(r.reason).toMatch(/decode/i);
-  });
-
   it('ranks label mixing above cross-label mixing', () => {
     const withinLabel = detectConfusable(`p${CYR.a}ypal.com`);
     const acrossLabels = detectConfusable(`${CYR.e}${CYR.p}${CYR.i}${CYR.c}.com`);
@@ -79,5 +72,17 @@ describe('detectConfusable', () => {
       expect(detectConfusable(d).suspicious).toBe(false);
     },
   );
+
+  it('clears a legitimate IDN once decoded', () => {
+  const r = detectConfusable('xn--mnchen-3ya.de');
+  expect(r.decoded).toBe('münchen.de');
+  expect(r.severity).toBe('none');
+});
+
+it('flags a homograph attack hidden in punycode', () => {
+  const r = detectConfusable('xn--pple-43d.com');
+  expect(r.decoded).toBe('аpple.com');
+  expect(r.severity).toBe('high');
+});
 
 });

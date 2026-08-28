@@ -1,3 +1,5 @@
+import { hasPunycode, punycodeToUnicode } from "./punycode.js";
+
 const SCRIPT_PATTERNS = {
   Latin: /\p{Script=Latin}/u,
   Cyrillic: /\p{Script=Cyrillic}/u,
@@ -35,48 +37,44 @@ export interface ConfusableReport {
   readonly scripts: readonly ScriptName[];
   readonly mixedLabels: readonly string[];
   readonly punycode: boolean;
+  readonly decoded?: string;
   readonly reason?: string;
 }
 
-const PUNYCODE_LABEL = /(^|\.)xn--/i;
-
 export function detectConfusable(domain: string): ConfusableReport {
-  const labels = domain.split('.');
+  const punycode = hasPunycode(domain);
+  const analysed = punycode ? punycodeToUnicode(domain) : domain;
 
-  if (PUNYCODE_LABEL.test(domain)) {
-    return {
-      suspicious: true,
-      severity: 'low',
-      scripts: [],
-      mixedLabels: [],
-      punycode: true,
-      reason: 'punycode form: decode to Unicode before analysing',
-    };
-  }
-    const mixedLabels = labels.filter((l) => scriptsIn(l).length > 1);
-    const scripts = scriptsIn(domain);
+  const labels = analysed.split('.');
+  const mixedLabels = labels.filter((l) => scriptsIn(l).length > 1);
+  const scripts = scriptsIn(analysed);
+
+  const base = {
+    punycode,
+    scripts,
+    ...(punycode ? { decoded: analysed } : {}),
+  };
 
   if (mixedLabels.length > 0) {
     return {
+      ...base,
       suspicious: true,
       severity: 'high',
-      scripts,
       mixedLabels,
-      punycode: false,
       reason: `mixed scripts within label(s): ${mixedLabels.join(', ')}`,
     };
   }
 
   if (scripts.length > 1) {
     return {
+      ...base,
       suspicious: true,
       severity: 'medium',
       scripts,
       mixedLabels: [],
-      punycode: false,
       reason: `domain mixes scripts across labels: ${scripts.join(', ')}`,
     };
   }
 
-    return { suspicious: false, severity: 'none', scripts, mixedLabels: [], punycode: false };
+    return { ...base, suspicious: false, severity: 'none', mixedLabels: [] };
 }
