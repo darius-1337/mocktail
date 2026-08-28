@@ -300,7 +300,7 @@ This detector answers one question: **does this domain mix alphabets in a
 way that has no legitimate use?** That catches a large class of attacks,
 but not all of them.
 
-Try `раураӏ.рф` every character is Cyrillic, including the TLD. It reads
+Try `раураӏ.рф`, every character is Cyrillic, including the TLD. It reads
 as "paypal" to a Latin-reading eye, but structurally it is a single-script
 domain, exactly like the legitimate Russian `пример.рф`. This detector
 returns `none` for both, and it is right to: nothing in the domain itself
@@ -322,8 +322,6 @@ something has to come from outside.
 Use this as one signal among several. Brand lists, certificate transparency
 monitoring and registration-date heuristics cover what script analysis
 cannot.
-
-Script analysis is one signal. It belongs alongside brand lists, certificate transparency monitoring and registration-date heuristics, not in place of them.
 
 ---
 
@@ -523,7 +521,7 @@ Person names, postal codes, URLs, IMEI and Spanish CIF. Names are the most inter
 
 ## Limitations
 
-**Phone numbers use ranges that cannot reach a real subscriber.** US numbers use the NANPA 555-0100 to 555-0199 fictitious range and UK numbers the Ofcom drama blocks  both are regulatory reservations. Spanish numbers use the unallocated 99 range, which is a **technical convention, not a regulatory reservation**: strict validators will reject them as not assignable in ES. That is deliberate, so the number cannot belong to anyone.
+**Phone numbers use ranges that cannot reach a real subscriber.** US numbers use the NANPA 555-0100 to 555-0199 fictitious range and UK numbers, the Ofcom drama blocks both are regulatory reservations. Spanish numbers use the unallocated 99 range, which is a **technical convention, not a regulatory reservation**: strict validators will reject them as not assignable in ES. That is deliberate, so the number cannot belong to anyone.
 
 **National BBAN check digits cover five of nine IBAN countries.** Germany has no single national algorithm  each bank uses one of roughly a hundred methods published by the Bundesbank. The UK has no BBAN checksum; validation relies on VocaLink modulus tables. Malta has none. Italy's CIN character is not yet implemented.
 
