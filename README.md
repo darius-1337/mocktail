@@ -2,7 +2,7 @@
 
 Deterministic test data with a complexity dial, plus homograph attack detection for domains.
 
-Generate identifiers that are **valid according to their real verification algorithm** — Luhn, ISO 7064 mod 97, mod 23, RFC 5322 — and choose how *unusual* they are within the space of legal values. Same seed in, same data out, every time.
+Generate identifiers that are **valid according to their real verification algorithm**: Luhn, ISO 7064 mod 97, mod 23, RFC 5322 and choose how *unusual* they are within the space of legal values. Same seed in, same data out, every time.
 
 Live at **https://mocktail.darius1337.workers.dev**. No installation, no API key, no account.
 
@@ -41,7 +41,7 @@ irm "https://mocktail.darius1337.workers.dev/v1/gen/es-dni"
 
 ### Windows CMD
 
-If you prefer real curl on Windows, it is `curl.exe`, not `curl` — plain `curl` is an alias for a different command and will not accept `-s`:
+If you prefer real curl on Windows, it is `curl.exe`, not `curl`  plain `curl` is an alias for a different command and will not accept `-s`:
 
 ```powershell
 curl.exe -s "https://mocktail.darius1337.workers.dev/v1/gen/es-dni"
@@ -256,7 +256,7 @@ curl -s -X POST "https://mocktail.darius1337.workers.dev/v1/analyze/domain" \
 | `medium` | Labels internally consistent, but the domain mixes scripts across them. | `еріс.com`, an all-Cyrillic label under a Latin TLD |
 | `high` | A single label mixes scripts. Almost never legitimate. | `pаypal.com` |
 
-The distinction between `medium` and `high` matters. A legitimate Russian business may register `пример.com`, mixing a Cyrillic label with a Latin TLD. But mixing scripts *inside one word* has essentially no legitimate use — it exists to make a Cyrillic word look Latin.
+The distinction between `medium` and `high` matters. A legitimate Russian business may register `пример.com`, mixing a Cyrillic label with a Latin TLD. But mixing scripts *inside one word* has essentially no legitimate use  it exists to make a Cyrillic word look Latin.
 
 Note that `пример.рф` is correctly cleared. A genuine non-Latin domain uses one script consistently; an attack mixes them, because the remaining characters must still resemble the original.
 
@@ -277,11 +277,51 @@ A domain only becomes a fully Cyrillic label if *every* letter has a convincing 
 
 If your own domain is fully convertible, that is worth knowing.
 
-### Limitations of the detector
+### Punycode
 
-- **Punycode input.** `xn--e1awd7f.com` is pure ASCII, so script analysis finds nothing. The API reports `low` severity with a note; decode to Unicode before analysing. Decoding is not yet implemented.
-- **Whole-script confusables.** A domain entirely in one non-Latin script, under a TLD of that same script, that still resembles a Latin brand.
-- **Latin-only look-alikes.** `paypa1.com`, with a digit one instead of a letter `l`, mixes no scripts at all. Digits are `Script=Common` and are deliberately ignored.
+The endpoint accepts a domain in either form. Punycode input is decoded
+first and the Unicode result is what gets analysed, so these two return
+the same verdict:
+
+    аpple.com            what you see in the address bar
+    xn--pple-43d.com     what the DNS resolves
+
+When the input was punycode, the response includes `punycode: true` and a
+`decoded` field with the form that was analysed. That field is often the
+most useful part of the answer: `xn--pple-43d.com` means nothing to a
+human, while `аpple.com` makes the attack obvious.
+
+Note that a legitimate IDN is cleared correctly. `xn--mnchen-3ya.de`
+decodes to `münchen.de`, which is entirely Latin, and returns `none`.
+
+ ### The limit of script analysis
+
+This detector answers one question: **does this domain mix alphabets in a
+way that has no legitimate use?** That catches a large class of attacks,
+but not all of them.
+
+Try `раураӏ.рф` every character is Cyrillic, including the TLD. It reads
+as "paypal" to a Latin-reading eye, but structurally it is a single-script
+domain, exactly like the legitimate Russian `пример.рф`. This detector
+returns `none` for both, and it is right to: nothing in the domain itself
+distinguishes them.
+
+Telling them apart requires two things this project does not have:
+
+- **A skeleton mapping** (Unicode UTS #39), which reduces every character
+  to a canonical form so that Cyrillic `а`, Greek `α` and Latin `a` all
+  collapse to the same symbol.
+- **A list of protected brands** to compare the skeleton against. Without
+  it there is nothing to say `раураӏ` is imitating, because recognising
+  "this looks like PayPal" is not a structural property of the string.
+
+That second part is the real boundary: it is no longer analysis, it is
+recognition. A domain can only be a homograph *of something*, and that
+something has to come from outside.
+
+Use this as one signal among several. Brand lists, certificate transparency
+monitoring and registration-date heuristics cover what script analysis
+cannot.
 
 Script analysis is one signal. It belongs alongside brand lists, certificate transparency monitoring and registration-date heuristics, not in place of them.
 
@@ -483,9 +523,9 @@ Person names, postal codes, URLs, IMEI and Spanish CIF. Names are the most inter
 
 ## Limitations
 
-**Phone numbers use ranges that cannot reach a real subscriber.** US numbers use the NANPA 555-0100 to 555-0199 fictitious range and UK numbers the Ofcom drama blocks — both are regulatory reservations. Spanish numbers use the unallocated 99 range, which is a **technical convention, not a regulatory reservation**: strict validators will reject them as not assignable in ES. That is deliberate, so the number cannot belong to anyone.
+**Phone numbers use ranges that cannot reach a real subscriber.** US numbers use the NANPA 555-0100 to 555-0199 fictitious range and UK numbers the Ofcom drama blocks  both are regulatory reservations. Spanish numbers use the unallocated 99 range, which is a **technical convention, not a regulatory reservation**: strict validators will reject them as not assignable in ES. That is deliberate, so the number cannot belong to anyone.
 
-**National BBAN check digits cover five of nine IBAN countries.** Germany has no single national algorithm — each bank uses one of roughly a hundred methods published by the Bundesbank. The UK has no BBAN checksum; validation relies on VocaLink modulus tables. Malta has none. Italy's CIN character is not yet implemented.
+**National BBAN check digits cover five of nine IBAN countries.** Germany has no single national algorithm  each bank uses one of roughly a hundred methods published by the Bundesbank. The UK has no BBAN checksum; validation relies on VocaLink modulus tables. Malta has none. Italy's CIN character is not yet implemented.
 
 **Card numbers use documented test BIN ranges, never real issuer ranges.** They pass Luhn, but no bank has issued them and they cannot be used in a transaction.
 
