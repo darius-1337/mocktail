@@ -1,6 +1,7 @@
 {
 	"name": "mocktail",
 	"version": "1.0.0",
+	"packageManager": "pnpm@11.18.0",
 	"description": "",
 	"main": "index.js",
 	"scripts": {
