@@ -23,10 +23,10 @@ export interface ValidationResult {
 
 export interface KindParam {
 	readonly name: string;
-  readonly description: string;
-  readonly default?: string;
-  readonly maxLength?: number;
-  readonly pattern?: RegExp;
+	readonly description: string;
+	readonly default?: string;
+	readonly maxLength?: number;
+	readonly pattern?: RegExp;
 }
 
 export interface Kind {

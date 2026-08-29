@@ -1,88 +1,102 @@
-import { describe, expect, it } from 'vitest';
-import { detectConfusable, scriptsIn } from './confusables.js';
+import { describe, expect, it } from "vitest";
+import { detectConfusable, scriptsIn } from "./confusables.js";
 
-const CYR = { a: '\u0430', e: '\u0435', o: '\u043E', p: '\u0440', c: '\u0441', i: '\u0456' };
+const CYR = {
+	a: "\u0430",
+	e: "\u0435",
+	o: "\u043E",
+	p: "\u0440",
+	c: "\u0441",
+	i: "\u0456",
+};
 
-describe('scriptsIn', () => {
-  it('ignores digits and punctuation', () => {
-    expect(scriptsIn('abc123-def')).toEqual(['Latin']);
-  });
+describe("scriptsIn", () => {
+	it("ignores digits and punctuation", () => {
+		expect(scriptsIn("abc123-def")).toEqual(["Latin"]);
+	});
 
-  it('detects a single non-Latin script', () => {
-    expect(scriptsIn('пример')).toEqual(['Cyrillic']);
-  });
+	it("detects a single non-Latin script", () => {
+		expect(scriptsIn("пример")).toEqual(["Cyrillic"]);
+	});
 
-  it('detects both scripts when mixed', () => {
-    expect([...scriptsIn(`${CYR.a}pple`)].sort()).toEqual(['Cyrillic', 'Latin']);
-  });
+	it("detects both scripts when mixed", () => {
+		expect([...scriptsIn(`${CYR.a}pple`)].sort()).toEqual([
+			"Cyrillic",
+			"Latin",
+		]);
+	});
 });
 
-describe('detectConfusable', () => {
-  it.each(['apple.com', 'my-company.co.uk', 'example.org'])(
-    'clears plain Latin domain %s',
-    (d) => {
-      expect(detectConfusable(d).severity).toBe('none');
-    },
-  );
+describe("detectConfusable", () => {
+	it.each(["apple.com", "my-company.co.uk", "example.org"])(
+		"clears plain Latin domain %s",
+		(d) => {
+			expect(detectConfusable(d).severity).toBe("none");
+		},
+	);
 
-  it('clears a legitimate single-script non-Latin domain', () => {
-    const r = detectConfusable('пример.рф');
-    expect(r.suspicious).toBe(false);
-    expect(r.scripts).toEqual(['Cyrillic']);
-  });
+	it("clears a legitimate single-script non-Latin domain", () => {
+		const r = detectConfusable("пример.рф");
+		expect(r.suspicious).toBe(false);
+		expect(r.scripts).toEqual(["Cyrillic"]);
+	});
 
-  it('flags mixing inside one label as high severity', () => {
-    const r = detectConfusable(`${CYR.a}pple.com`);
-    expect(r.severity).toBe('high');
-    expect(r.mixedLabels).toHaveLength(1);
-  });
+	it("flags mixing inside one label as high severity", () => {
+		const r = detectConfusable(`${CYR.a}pple.com`);
+		expect(r.severity).toBe("high");
+		expect(r.mixedLabels).toHaveLength(1);
+	});
 
-  it('flags an all-Cyrillic label under a Latin TLD', () => {
-    const attack = `${CYR.e}${CYR.p}${CYR.i}${CYR.c}.com`;
-    const r = detectConfusable(attack);
+	it("flags an all-Cyrillic label under a Latin TLD", () => {
+		const attack = `${CYR.e}${CYR.p}${CYR.i}${CYR.c}.com`;
+		const r = detectConfusable(attack);
 
-    expect(r.suspicious).toBe(true);
-    expect(r.severity).toBe('medium');
-    expect(r.mixedLabels).toHaveLength(0);
-    expect([...scriptsIn(`${CYR.a}pple`)].sort()).toEqual(['Cyrillic', 'Latin']);
-  });
+		expect(r.suspicious).toBe(true);
+		expect(r.severity).toBe("medium");
+		expect(r.mixedLabels).toHaveLength(0);
+		expect([...scriptsIn(`${CYR.a}pple`)].sort()).toEqual([
+			"Cyrillic",
+			"Latin",
+		]);
+	});
 
-  it('ranks label mixing above cross-label mixing', () => {
-    const withinLabel = detectConfusable(`p${CYR.a}ypal.com`);
-    const acrossLabels = detectConfusable(`${CYR.e}${CYR.p}${CYR.i}${CYR.c}.com`);
-    expect(withinLabel.severity).toBe('high');
-    expect(acrossLabels.severity).toBe('medium');
-  });
+	it("ranks label mixing above cross-label mixing", () => {
+		const withinLabel = detectConfusable(`p${CYR.a}ypal.com`);
+		const acrossLabels = detectConfusable(
+			`${CYR.e}${CYR.p}${CYR.i}${CYR.c}.com`,
+		);
+		expect(withinLabel.severity).toBe("high");
+		expect(acrossLabels.severity).toBe("medium");
+	});
 
-  it('detects Greek homoglyphs, not just Cyrillic', () => {
-    const r = detectConfusable('pc\u03BFmponentes.com');
-    expect(r.severity).toBe('high');
-    expect(r.scripts).toContain('Greek');
-  });
+	it("detects Greek homoglyphs, not just Cyrillic", () => {
+		const r = detectConfusable("pc\u03BFmponentes.com");
+		expect(r.severity).toBe("high");
+		expect(r.scripts).toContain("Greek");
+	});
 
-  it('detects an attack combining three scripts', () => {
-    const r = detectConfusable('\u0440\u0441c\u03BFmponent\u0435s.com');
-    expect(r.severity).toBe('high');
-    expect(r.scripts).toHaveLength(3);
-  });
+	it("detects an attack combining three scripts", () => {
+		const r = detectConfusable("\u0440\u0441c\u03BFmponent\u0435s.com");
+		expect(r.severity).toBe("high");
+		expect(r.scripts).toHaveLength(3);
+	});
 
-  it.each(['pccomponentes.es', 'pccomponentes.com'])(
-    'clears the legitimate domain %s',
-    (d) => {
-      expect(detectConfusable(d).suspicious).toBe(false);
-    },
-  );
+	it.each(["pccomponentes.es", "pccomponentes.com"])(
+		"clears the legitimate domain %s",
+		(d) => {
+			expect(detectConfusable(d).suspicious).toBe(false);
+		},
+	);
 
-  it('clears a legitimate IDN once decoded', () => {
-  const r = detectConfusable('xn--mnchen-3ya.de');
-  expect(r.decoded).toBe('münchen.de');
-  expect(r.severity).toBe('none');
-});
+	it("clears a legitimate IDN once decoded", () => {
+		const r = detectConfusable("xn--mnchen-3ya.de");
+		expect(r.decoded).toBe("münchen.de");
+		expect(r.severity).toBe("none");
+	});
 
-it('flags a homograph attack hidden in punycode', () => {
-  const r = detectConfusable('xn--pple-43d.com');
-  expect(r.decoded).toBe('аpple.com');
-  expect(r.severity).toBe('high');
-});
-
+	it("flags a homograph attack hidden in punycode", () => {
+		const r = detectConfusable("xn--pple-43d.com");
+		expect(r.decoded).toBe("аpple.com");
+		expect(r.severity).toBe("high");
+	});
 });

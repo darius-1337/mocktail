@@ -23,13 +23,13 @@ export interface GenerateResult {
 	readonly band: Band;
 	readonly valid: boolean;
 	readonly count: number;
-	 readonly params: Readonly<Record<string, string>>;
+	readonly params: Readonly<Record<string, string>>;
 	readonly data: readonly string[];
 }
 
 export interface ParamProblem {
 	readonly parameter: string;
-	readonly reason: 'missing' | 'too_long' | 'invalid_format';
+	readonly reason: "missing" | "too_long" | "invalid_format";
 	readonly received?: string;
 	readonly expected?: string;
 	readonly example?: string;
@@ -44,24 +44,25 @@ export class UnknownKindError extends Error {
 export class InvalidSeedError extends Error {
 	constructor(message: string) {
 		super(message);
-		this.name = 'InvalidSeedError';
+		this.name = "InvalidSeedError";
 	}
 }
 
 export class InvalidParamError extends Error {
-  constructor(readonly problem: ParamProblem) {
-    super(`invalid parameter "${problem.parameter}": ${problem.reason}`);
-    this.name = 'InvalidParamError';
-  }
+	constructor(readonly problem: ParamProblem) {
+		super(`invalid parameter "${problem.parameter}": ${problem.reason}`);
+		this.name = "InvalidParamError";
+	}
 }
 
 export function generate(req: GenerateRequest): GenerateResult {
-
 	const kind = registry.get(req.kind);
 	if (kind === undefined) throw new UnknownKindError(req.kind);
 
-	if(req.seed.length > MAX_SEED_LENGTH) {
-		throw new InvalidSeedError(`the seed cannot exceed ${MAX_SEED_LENGTH} characters`);
+	if (req.seed.length > MAX_SEED_LENGTH) {
+		throw new InvalidSeedError(
+			`the seed cannot exceed ${MAX_SEED_LENGTH} characters`,
+		);
 	}
 
 	const band = req.band ?? "realistic";
@@ -95,44 +96,44 @@ export function randomSeed(): string {
 }
 
 function resolveParams(
-  kind: Kind,
-  given: Readonly<Record<string, string>>,
+	kind: Kind,
+	given: Readonly<Record<string, string>>,
 ): Record<string, string> {
-  const resolved: Record<string, string> = {};
+	const resolved: Record<string, string> = {};
 
-  for (const spec of kind.params ?? []) {
-    const value = given[spec.name] ?? spec.default;
+	for (const spec of kind.params ?? []) {
+		const value = given[spec.name] ?? spec.default;
 
-    if (value === undefined) {
-      throw new InvalidParamError({
-        parameter: spec.name,
-        reason: 'missing',
-        expected: spec.description,
-      });
-    }
+		if (value === undefined) {
+			throw new InvalidParamError({
+				parameter: spec.name,
+				reason: "missing",
+				expected: spec.description,
+			});
+		}
 
-    const maxLength = spec.maxLength ?? MAX_PARAM_LENGTH;
-    if (value.length > maxLength) {
-      throw new InvalidParamError({
-        parameter: spec.name,
-        reason: 'too_long',
-        received: `${value.length} characters`,
-        expected: `at most ${maxLength}`,
-      });
-    }
+		const maxLength = spec.maxLength ?? MAX_PARAM_LENGTH;
+		if (value.length > maxLength) {
+			throw new InvalidParamError({
+				parameter: spec.name,
+				reason: "too_long",
+				received: `${value.length} characters`,
+				expected: `at most ${maxLength}`,
+			});
+		}
 
-    if (spec.pattern !== undefined && !spec.pattern.test(value)) {
-      throw new InvalidParamError({
-        parameter: spec.name,
-        reason: 'invalid_format',
-        received: value,
-        expected: spec.pattern.source,
-        ...(spec.default !== undefined ? { example: spec.default } : {}),
-      });
-    }
+		if (spec.pattern !== undefined && !spec.pattern.test(value)) {
+			throw new InvalidParamError({
+				parameter: spec.name,
+				reason: "invalid_format",
+				received: value,
+				expected: spec.pattern.source,
+				...(spec.default !== undefined ? { example: spec.default } : {}),
+			});
+		}
 
-    resolved[spec.name] = value;
-  }
+		resolved[spec.name] = value;
+	}
 
-  return resolved;
+	return resolved;
 }

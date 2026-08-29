@@ -1,16 +1,27 @@
 import type { Kind } from "./contracts.js";
 import { cardKinds } from "./kinds/card/index.js";
+import { date } from "./kinds/date/index.js";
+import { datetime } from "./kinds/datetime/index.js";
+import { datetimeSql } from "./kinds/datetime-sql/index.js";
 import { domainHomograph } from "./kinds/domain-homograph/index.js";
 import { email } from "./kinds/email/index.js";
 import { esDni } from "./kinds/es-dni/index.js";
 import { ibanKinds } from "./kinds/iban/index.js";
-import { uuidKinds } from "./kinds/uuid/index.js";
-import { date } from "./kinds/date/index.js";
-import { datetime } from "./kinds/datetime/index.js";
-import { datetimeSql } from "./kinds/datetime-sql/index.js";
 import { phoneKinds } from "./kinds/phone/index.js";
+import { uuidKinds } from "./kinds/uuid/index.js";
 
-const kinds: readonly Kind[] = [esDni, ...ibanKinds, ...cardKinds, ...uuidKinds, ...phoneKinds, email, domainHomograph, date, datetime, datetimeSql];
+const kinds: readonly Kind[] = [
+	esDni,
+	...ibanKinds,
+	...cardKinds,
+	...uuidKinds,
+	...phoneKinds,
+	email,
+	domainHomograph,
+	date,
+	datetime,
+	datetimeSql,
+];
 
 export const registry: ReadonlyMap<string, Kind> = new Map(
 	kinds.map((kind) => [kind.id, kind]),

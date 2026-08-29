@@ -44,16 +44,16 @@ export function conformsToContract(kind: Kind): void {
 			);
 		});
 
-		it('the band actually influences the output', () => {
-  		const seeds = Array.from({ length: 200 }, (_, i) => `band-probe-${i}`);
+		it("the band actually influences the output", () => {
+			const seeds = Array.from({ length: 200 }, (_, i) => `band-probe-${i}`);
 
-  		const differing = seeds.filter(
-    		(seed) =>
-      			kind.generate(rngFor(seed), { band: 'simple' }) !==
-      			kind.generate(rngFor(seed), { band: 'hostile' }),
-  			).length;
+			const differing = seeds.filter(
+				(seed) =>
+					kind.generate(rngFor(seed), { band: "simple" }) !==
+					kind.generate(rngFor(seed), { band: "hostile" }),
+			).length;
 
-  expect(differing / seeds.length).toBeGreaterThan(0.5);
-});
+			expect(differing / seeds.length).toBeGreaterThan(0.5);
+		});
 	});
 }

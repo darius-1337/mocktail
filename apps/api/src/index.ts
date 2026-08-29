@@ -8,31 +8,31 @@ import {
 	randomSeed,
 	registry,
 	seedFrom,
-	splitmix64
+	splitmix64,
 } from "@mocktail/core";
+import { populate, toCsv, toNdjson, toSql } from "@mocktail/populate";
 import { type Context, Hono } from "hono";
 import { cors } from "hono/cors";
-import { populate, toCsv, toNdjson, toSql } from '@mocktail/populate';
-import { toErrorResponse } from "./errors.js";
 import { CACHE_POLICY } from "./cache.js";
+import { toErrorResponse } from "./errors.js";
 
 const app = new Hono();
 app.use("/*", cors());
 
-app.use('/*', async (c, next) => {
-  await next();
-  c.header('X-Content-Type-Options', 'nosniff');
-  c.header('Referrer-Policy', 'no-referrer');
+app.use("/*", async (c, next) => {
+	await next();
+	c.header("X-Content-Type-Options", "nosniff");
+	c.header("Referrer-Policy", "no-referrer");
 });
 
 const RESERVED = new Set(["band", "count", "valid"]);
 
 app.onError((err, c) => {
-  const mapped = toErrorResponse(c, err);
-  if (mapped !== null) return mapped;
+	const mapped = toErrorResponse(c, err);
+	if (mapped !== null) return mapped;
 
-  console.error(err);
-  return c.json({ error: 'Internal error' }, 500);
+	console.error(err);
+	return c.json({ error: "Internal error" }, 500);
 });
 
 async function readJson(c: Context): Promise<Record<string, unknown> | null> {
@@ -57,23 +57,25 @@ app.get("/", (c) =>
 	}),
 );
 
-app.get('/v1/kinds', (c) =>
-  c.json({
-    count: registry.size,
-    kinds: [...registry.values()].map((kind) => ({
-      id: kind.id,
-      label: kind.label,
-      description: kind.description,
-      example: kind.generate(splitmix64(seedFrom('example')), { band: 'simple' }),
-      url: `/v1/gen/${kind.id}`,
-    })),
-  }),
+app.get("/v1/kinds", (c) =>
+	c.json({
+		count: registry.size,
+		kinds: [...registry.values()].map((kind) => ({
+			id: kind.id,
+			label: kind.label,
+			description: kind.description,
+			example: kind.generate(splitmix64(seedFrom("example")), {
+				band: "simple",
+			}),
+			url: `/v1/gen/${kind.id}`,
+		})),
+	}),
 );
 
 function handle(c: Context, seed: string, seeded: boolean) {
 	const kind = c.req.param("kind") ?? "";
 
-	if(!registry.has(kind)) {
+	if (!registry.has(kind)) {
 		return c.json({ error: `unknown kind: ${kind}`, available: kindIds }, 404);
 	}
 
@@ -91,37 +93,36 @@ function handle(c: Context, seed: string, seeded: boolean) {
 		);
 	}
 
-	if(seed.length > MAX_SEED_LENGTH) {
-		return c.json({error: `seed cannot exceed ${MAX_SEED_LENGTH} characters.`}, 400);
+	if (seed.length > MAX_SEED_LENGTH) {
+		return c.json(
+			{ error: `seed cannot exceed ${MAX_SEED_LENGTH} characters.` },
+			400,
+		);
 	}
 
 	const params = Object.fromEntries(
 		[...new URL(c.req.url).searchParams].filter(([key]) => !RESERVED.has(key)),
 	);
 
-	
-		const res = c.json(
-			generate({
-				kind: kind,
-				seed,
-				band: bandParam,
-				count: countParam,
-				valid: c.req.query("valid") !== "false",
-				params,
-			}),
-		);
+	const res = c.json(
+		generate({
+			kind: kind,
+			seed,
+			band: bandParam,
+			count: countParam,
+			valid: c.req.query("valid") !== "false",
+			params,
+		}),
+	);
 
-		res.headers.set(
-			"Cache-Control",
-			CACHE_POLICY[seeded ? "seeded" : "random"],
-		);
+	res.headers.set("Cache-Control", CACHE_POLICY[seeded ? "seeded" : "random"]);
 
-		return res;	
+	return res;
 }
 
 app.get("/v1/gen/:kind", (c) => handle(c, randomSeed(), false));
 app.get("/v1/gen/:kind/:seed", (c) =>
-	handle(c, c.req.param('seed') ?? '', true),
+	handle(c, c.req.param("seed") ?? "", true),
 );
 
 app.post("/v1/validate/:kind", async (c) => {
@@ -176,7 +177,10 @@ app.post("/v1/populate", async (c) => {
 
 	const seed = req.seed ?? randomSeed();
 	if (seed.length > MAX_SEED_LENGTH) {
-		return c.json({ error: `seed cannot exceed ${MAX_SEED_LENGTH} characters` }, 400);
+		return c.json(
+			{ error: `seed cannot exceed ${MAX_SEED_LENGTH} characters` },
+			400,
+		);
 	}
 
 	const rows = populate({
@@ -194,7 +198,9 @@ app.post("/v1/populate", async (c) => {
 		});
 	}
 	if (accept.includes("text/csv")) {
-		return c.text(toCsv(rows), 200, { "Content-Type": "text/csv; charset=utf-8" });
+		return c.text(toCsv(rows), 200, {
+			"Content-Type": "text/csv; charset=utf-8",
+		});
 	}
 	if (accept.includes("application/x-ndjson")) {
 		return c.text(toNdjson(rows), 200, {
