@@ -1,4 +1,3 @@
-import { string } from "fast-check";
 import { BANDS, type Band, type Kind } from "./contracts.js";
 import { registry } from "./registry.js";
 import { seedFrom } from "./rng/seed.js";
