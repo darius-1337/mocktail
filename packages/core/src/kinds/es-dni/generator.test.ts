@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import type { Band } from "../../contracts.js";
 import { seedFrom } from "../../rng/seed.js";
 import { splitmix64 } from "../../rng/splitmix64.js";
 import { conformsToContract } from "../../testing/contract.js";
