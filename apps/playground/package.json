@@ -1,0 +1,28 @@
+{
+	"name": "@mocktail/playground",
+	"version": "1.0.0",
+	"description": "Interactive playground for mocktail, running @mocktail/core in the browser",
+	"private": true,
+	"type": "module",
+	"license": "Apache-2.0",
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build",
+		"preview": "vite preview",
+		"typecheck": "tsc --noEmit",
+		"deploy": "vite build && wrangler pages deploy dist"
+	},
+	"dependencies": {
+		"@mocktail/core": "workspace:*",
+		"highlight.js": "^11.12.0",
+		"three": "^0.185.1"
+	},
+	"devDependencies": {
+		"@tailwindcss/vite": "^4.3.3",
+		"@types/three": "^0.185.4",
+		"tailwindcss": "^4.3.3",
+		"typescript": "^7.0.2",
+		"vite": "^8.2.2",
+		"wrangler": "^4.119.0"
+	}
+}
