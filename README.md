@@ -1,25 +1,25 @@
 # mocktail
 
-Deterministic test data with a complexity dial, plus homograph attack detection for domains.
+Test data generator with a rarity dial. Every identifier it produces is valid according to its real verification algorithm: Luhn for cards, ISO 7064 mod 97 for IBAN, mod 23 for the Spanish DNI, RFC 5322 for email and RFC 9562 for UUID. You choose how unusual the values are within the space of legal ones. Same seed in, same data out, every time.
 
-Generate identifiers that are **valid according to their real verification algorithm**: Luhn, ISO 7064 mod 97, mod 23, RFC 5322 and choose how *unusual* they are within the space of legal values. Same seed in, same data out, every time.
+Try it in the browser at **https://mocktail-9r8.pages.dev**. The playground runs the generator locally on the page, so you can explore seeds and bands with zero latency. For everything else there is the API at **https://mocktail.darius1337.workers.dev**. No installation, no API key, no account.
 
-Live at **https://mocktail.darius1337.workers.dev**. No installation, no API key, no account.
+The catalogue currently covers 26 kinds and keeps growing. The goal is broad: many more data types, each one validated by the real algorithm behind it.
 
 ---
 
 ## Why
 
-Production bugs do not show up with `test@example.com` and `John Smith`. They show up with:
+Production bugs do not show up with `test@example.com` and `12345678Z`. They show up with:
 
-- The surname `O'Brien-Müller` that breaks SQL escaping without parameterised queries.
 - The Spanish DNI with leading zeros that someone stored as `INT`.
 - The 19-digit card number that does not fit in `VARCHAR(16)`.
+- The IBAN whose account number is all zeros, with check digits that still pass mod 97.
 - The email `"very.(),:;<>[]\".unusual"@example.com`, valid per RFC 5322, that defeats almost every regex in production.
 - The date `9999-12-31`, or `1970-01-01` meaning "nobody filled this in".
 - The domain that looks exactly like yours but is written in Cyrillic.
 
-mocktail gives you the strangest value that is still valid, and lets you reproduce it forever from a seed.
+mocktail gives you the strangest value that is still valid and lets you reproduce it forever from a seed.
 
 ---
 
@@ -41,7 +41,7 @@ irm "https://mocktail.darius1337.workers.dev/v1/gen/es-dni"
 
 ### Windows CMD
 
-If you prefer real curl on Windows, it is `curl.exe`, not `curl`  plain `curl` is an alias for a different command and will not accept `-s`:
+If you prefer real curl on Windows, it is `curl.exe`, not `curl`. Plain `curl` is an alias.
 
 ```powershell
 curl.exe -s "https://mocktail.darius1337.workers.dev/v1/gen/es-dni"
@@ -181,7 +181,7 @@ Bands are not hard boundaries. Each targets a zone of the spectrum and samples a
 
 ---
 
-## Filling a table (WiP)
+## Filling a table
 
 `/v1/populate` returns rows instead of a single column, in JSON, CSV or SQL.
 
@@ -256,7 +256,7 @@ curl -s -X POST "https://mocktail.darius1337.workers.dev/v1/analyze/domain" \
 | `medium` | Labels internally consistent, but the domain mixes scripts across them. | `еріс.com`, an all-Cyrillic label under a Latin TLD |
 | `high` | A single label mixes scripts. Almost never legitimate. | `pаypal.com` |
 
-The distinction between `medium` and `high` matters. A legitimate Russian business may register `пример.com`, mixing a Cyrillic label with a Latin TLD. But mixing scripts *inside one word* has essentially no legitimate use  it exists to make a Cyrillic word look Latin.
+The distinction between `medium` and `high` matters. A legitimate Russian business may register `пример.com`, mixing a Cyrillic label with a Latin TLD. But mixing scripts *inside one word* has essentially no legitimate use: it exists to make a Cyrillic word look Latin.
 
 Note that `пример.рф` is correctly cleared. A genuine non-Latin domain uses one script consistently; an attack mixes them, because the remaining characters must still resemble the original.
 
@@ -419,27 +419,9 @@ Error messages contain the input you sent. Escape them before rendering in HTML.
 
 ### JavaScript and TypeScript
 
-Skip the network entirely:
+`@mocktail/core` is not on npm yet. Publishing it is on the roadmap; until then, clone the repo and import it from the workspace, or call the API:
 
-```bash
-npm install @mocktail/core
-```
-
-```ts
-import { generate, detectConfusable } from '@mocktail/core';
-
-const { data } = generate({
-  kind: 'es-dni',
-  seed: 'user-service-tests',
-  band: 'hostile',
-  count: 10,
-});
-
-const report = detectConfusable('аpple.com');
-if (report.suspicious) console.warn(report.reason);
-```
-
-Or call the API:
+call the API:
 
 ```ts
 const res = await fetch('https://mocktail.darius1337.workers.dev/v1/gen/es-dni?count=5');
@@ -515,15 +497,15 @@ Adding a kind requires no changes to the API. Every endpoint takes the kind as a
 
 ### Not yet covered
 
-Person names, postal codes, URLs, IMEI and Spanish CIF. Names are the most interesting of these: apostrophes, the Turkish dotless i, right-to-left scripts and mononyms break more software than any checksum.
+The catalogue is under active development and new kinds land with each release. Next in line are person names, postal codes, URLs, IMEI and the Spanish CIF. Names are the most interesting of these: apostrophes, the Turkish dotless i, right-to-left scripts and mononyms break more software than any checksum. Adding a kind requires no API changes, so the endpoints you integrate today will serve every future kind as well.
 
 ---
 
 ## Limitations
 
-**Phone numbers use ranges that cannot reach a real subscriber.** US numbers use the NANPA 555-0100 to 555-0199 fictitious range and UK numbers, the Ofcom drama blocks both are regulatory reservations. Spanish numbers use the unallocated 99 range, which is a **technical convention, not a regulatory reservation**: strict validators will reject them as not assignable in ES. That is deliberate, so the number cannot belong to anyone.
+US numbers use the **NANPA 555-0100** to **555-0199** fictitious range. UK numbers use the Ofcom drama blocks. Both are *regulatory reservations*.
 
-**National BBAN check digits cover five of nine IBAN countries.** Germany has no single national algorithm  each bank uses one of roughly a hundred methods published by the Bundesbank. The UK has no BBAN checksum; validation relies on VocaLink modulus tables. Malta has none. Italy's CIN character is not yet implemented.
+**National BBAN check digits cover five of nine IBAN countries.** Germany has no single national algorithm: each bank uses one of roughly a hundred methods published by the Bundesbank. The UK has no BBAN checksum; validation relies on VocaLink modulus tables. Malta has none. Italy's CIN character is not yet implemented.
 
 **Card numbers use documented test BIN ranges, never real issuer ranges.** They pass Luhn, but no bank has issued them and they cannot be used in a transaction.
 
